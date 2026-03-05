@@ -1,16 +1,16 @@
 <?php
 
-namespace Tests\Feature;
+namespace Tests;
 
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 
 #[CoversNothing]
-final class CliHelpTest extends TestCase
+final class CliTest extends TestCase
 {
-    public function testHelpDisplaysUsageAndReturnsZero(): void
+    public function testHelpCommand(): void
     {
-        $projectRoot = dirname(__DIR__, 2);
+        $projectRoot = dirname(__DIR__, 1);
         $cmd = 'php ' . escapeshellarg($projectRoot . DIRECTORY_SEPARATOR . 'bin' . DIRECTORY_SEPARATOR . 'poker') . ' --help';
 
         $outputLines = [];
