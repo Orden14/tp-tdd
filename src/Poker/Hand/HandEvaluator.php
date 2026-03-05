@@ -14,29 +14,19 @@ final class HandEvaluator
     {
         $sorted = $this->sortByRankDesc($cards);
 
-        $flush = $this->tryEvaluateFlush($sorted);
-        if ($flush !== null) {
-            return $flush;
-        }
+        $strategies = [
+            fn(array $c): ?EvaluatedHand => $this->tryEvaluateFlush($c),
+            fn(array $c): ?EvaluatedHand => $this->tryEvaluateStraight($c),
+            fn(array $c): ?EvaluatedHand => $this->tryEvaluateThreeOfAKind($c),
+            fn(array $c): ?EvaluatedHand => $this->tryEvaluateTwoPair($c),
+            fn(array $c): ?EvaluatedHand => $this->tryEvaluateOnePair($c),
+        ];
 
-        $straight = $this->tryEvaluateStraight($sorted);
-        if ($straight !== null) {
-            return $straight;
-        }
-
-        $threeOfAKind = $this->tryEvaluateThreeOfAKind($sorted);
-        if ($threeOfAKind !== null) {
-            return $threeOfAKind;
-        }
-
-        $twoPair = $this->tryEvaluateTwoPair($sorted);
-        if ($twoPair !== null) {
-            return $twoPair;
-        }
-
-        $onePair = $this->tryEvaluateOnePair($sorted);
-        if ($onePair !== null) {
-            return $onePair;
+        foreach ($strategies as $tryEvaluate) {
+            $hand = $tryEvaluate($sorted);
+            if ($hand !== null) {
+                return $hand;
+            }
         }
 
         return $this->evaluateHighCard($sorted);
