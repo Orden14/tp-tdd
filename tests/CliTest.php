@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests;
 
 use PHPUnit\Framework\Attributes\CoversNothing;
@@ -21,5 +23,21 @@ final class CliTest extends TestCase
 
         self::assertSame(0, $exitCode, 'Le code retour de --help doit être 0');
         self::assertStringContainsString('Usage:', $output, 'La sortie --help doit contenir un usage');
+    }
+
+    public function testRunWithoutArgumentsShowsErrorAndReturnsNonZero(): void
+    {
+        $projectRoot = dirname(__DIR__, 1);
+        $cmd = 'php ' . escapeshellarg($projectRoot . DIRECTORY_SEPARATOR . 'bin' . DIRECTORY_SEPARATOR . 'poker') . ' run';
+
+        $outputLines = [];
+        $exitCode = 0;
+        exec($cmd, $outputLines, $exitCode);
+
+        $output = implode("\n", $outputLines);
+
+        self::assertNotSame(0, $exitCode, 'Le code retour de `run` sans arguments doit être non nul');
+        self::assertStringContainsString('Error:', $output, 'La sortie doit contenir un message d\'erreur');
+        self::assertStringContainsString('Usage:', $output, 'La sortie doit rappeler l\'usage');
     }
 }
