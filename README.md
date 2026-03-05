@@ -48,6 +48,11 @@ Exemples :
 
 ## Utilisation CLI
 
+### Pourquoi en CLI
+
+- Permet de se concentrer sur la logique métier (évaluation + comparaison) sans se soucier d’une interface graphique.
+- La codebase a été faite pour tout de même être utilisable dans d'autres contextes
+
 ### Aide
 
 ```cmd
@@ -75,7 +80,7 @@ Winner: p2
 php bin/poker run --board S2:H3:D4:C5:S6 --p1 SK:HQ --p2 DA:C3
 ```
 
-Sortie attendue (proche, l’ordre exact des cartes best peut varier selon l’implémentation, mais l’idée est la même) :
+Sortie attendue :
 
 ```text
 Board: Deux de pique | Trois de coeur | Quatre de carreau | Cinq de trèfle | Six de pique
