@@ -2,10 +2,8 @@
 
 namespace Tests;
 
-use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 
-#[CoversNothing]
 final class CliTest extends TestCase
 {
     public function testHelpCommand(): void

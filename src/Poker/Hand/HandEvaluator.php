@@ -4,6 +4,7 @@ namespace App\Poker\Hand;
 
 use App\Domain\Card;
 use App\Domain\Rank;
+use App\Poker\Rank\RankValue;
 
 final class HandEvaluator
 {
@@ -42,7 +43,7 @@ final class HandEvaluator
     private function sortByRankDesc(array $cards): array
     {
         $sorted = $cards;
-        usort($sorted, static fn(Card $a, Card $b): int => self::rankValue($b->rank) <=> self::rankValue($a->rank));
+        usort($sorted, static fn(Card $a, Card $b): int => RankValue::toInt($b->rank) <=> RankValue::toInt($a->rank));
         return $sorted;
     }
 
@@ -140,13 +141,13 @@ final class HandEvaluator
         $hasAce = isset($byRank[Rank::Ace->value]);
 
         $uniqueCards = array_values($byRank);
-        usort($uniqueCards, static fn(Card $a, Card $b): int => self::rankValue($b->rank) <=> self::rankValue($a->rank));
+        usort($uniqueCards, static fn(Card $a, Card $b): int => RankValue::toInt($b->rank) <=> RankValue::toInt($a->rank));
 
         $run = [];
         $prevValue = null;
 
         foreach ($uniqueCards as $card) {
-            $v = self::rankValue($card->rank);
+            $v = RankValue::toInt($card->rank);
 
             if ($prevValue === null) {
                 $run = [$card];
@@ -443,24 +444,5 @@ final class HandEvaluator
         }
 
         return null;
-    }
-
-    private static function rankValue(Rank $rank): int
-    {
-        return match ($rank) {
-            Rank::Two => 2,
-            Rank::Three => 3,
-            Rank::Four => 4,
-            Rank::Five => 5,
-            Rank::Six => 6,
-            Rank::Seven => 7,
-            Rank::Eight => 8,
-            Rank::Nine => 9,
-            Rank::Ten => 10,
-            Rank::Jack => 11,
-            Rank::Queen => 12,
-            Rank::King => 13,
-            Rank::Ace => 14,
-        };
     }
 }
