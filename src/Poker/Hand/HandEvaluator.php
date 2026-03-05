@@ -14,6 +14,11 @@ final class HandEvaluator
     {
         $sorted = $this->sortByRankDesc($cards);
 
+        $threeOfAKind = $this->tryEvaluateThreeOfAKind($sorted);
+        if ($threeOfAKind !== null) {
+            return $threeOfAKind;
+        }
+
         $twoPair = $this->tryEvaluateTwoPair($sorted);
         if ($twoPair !== null) {
             return $twoPair;
@@ -83,6 +88,58 @@ final class HandEvaluator
         }
 
         return new EvaluatedHand(HandCategory::TwoPair, array_merge($highPairCards, $lowPairCards, [$kicker]));
+    }
+
+    /**
+     * @param list<Card> $sortedDesc
+     */
+    private function tryEvaluateThreeOfAKind(array $sortedDesc): ?EvaluatedHand
+    {
+        $tripsRank = $this->findBestTripsRank($sortedDesc);
+        if ($tripsRank === null) {
+            return null;
+        }
+
+        $tripsCards = [];
+        $kickers = [];
+
+        foreach ($sortedDesc as $card) {
+            if ($card->rank === $tripsRank && count($tripsCards) < 3) {
+                $tripsCards[] = $card;
+                continue;
+            }
+
+            if ($card->rank !== $tripsRank && count($kickers) < 2) {
+                $kickers[] = $card;
+            }
+        }
+
+        if (count($tripsCards) !== 3) {
+            return null;
+        }
+
+        return new EvaluatedHand(HandCategory::ThreeOfAKind, array_merge($tripsCards, $kickers));
+    }
+
+    /**
+     * @param list<Card> $sortedDesc
+     */
+    private function findBestTripsRank(array $sortedDesc): ?Rank
+    {
+        $counts = [];
+        foreach ($sortedDesc as $card) {
+            $key = $card->rank->value;
+            $counts[$key] = ($counts[$key] ?? 0) + 1;
+        }
+
+        foreach ($sortedDesc as $card) {
+            $key = $card->rank->value;
+            if (($counts[$key] ?? 0) >= 3) {
+                return $card->rank;
+            }
+        }
+
+        return null;
     }
 
     /**
