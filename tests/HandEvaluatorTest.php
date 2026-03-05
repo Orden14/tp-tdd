@@ -66,4 +66,18 @@ final class HandEvaluatorTest extends TestCase
         self::assertSame(HandCategory::ThreeOfAKind, $hand->category);
         self::assertSame(['SA', 'HA', 'DA', 'DK', 'HQ'], $hand->cardsAsKeys());
     }
+
+    public function testStraightSelectsBestStraightFiveCards(): void
+    {
+        $parser = new CardParser();
+
+        // Suite 10-J-Q-K-A (broadway)
+        $cards = $parser->parseCards('SA:DK:HQ:CJ:DT:D9:S7', 7);
+
+        $evaluator = new HandEvaluator();
+        $hand = $evaluator->evaluateBestHand($cards);
+
+        self::assertSame(HandCategory::Straight, $hand->category);
+        self::assertSame(['SA', 'DK', 'HQ', 'CJ', 'DT'], $hand->cardsAsKeys());
+    }
 }
