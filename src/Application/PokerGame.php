@@ -32,7 +32,7 @@ final class PokerGame
         }
 
         if ($evaluations === []) {
-            return new PokerGameResult([]);
+            return new PokerGameResult([], []);
         }
 
         $best = $evaluations[0];
@@ -49,6 +49,6 @@ final class PokerGame
             }
         }
 
-        return new PokerGameResult($winners);
+        return new PokerGameResult($evaluations, $winners);
     }
 }

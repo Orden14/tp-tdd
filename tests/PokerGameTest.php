@@ -24,6 +24,8 @@ final class PokerGameTest extends TestCase
         $result = $game->play($players, $board);
 
         self::assertSame(['p1'], $result->winnerIds());
+        self::assertNotNull($result->resultFor('p1'));
+        self::assertNotNull($result->resultFor('p2'));
     }
 
     public function testDeterminesSplitPotOnTie(): void

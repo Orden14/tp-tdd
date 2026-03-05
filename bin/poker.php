@@ -7,6 +7,7 @@ use App\Application\Exception\InvalidGameInput;
 use App\Application\GameInputValidator;
 use App\Application\Input\PlayerInput;
 use App\Application\Parser\CardParser;
+use App\Application\PokerGame;
 use App\Domain\Deck;
 
 $argv = $argv ?? [];
@@ -86,7 +87,45 @@ if ($subCommand === 'run') {
         exit(2);
     }
 
-    fwrite(STDOUT, "OK\n");
+    $game = new PokerGame();
+    $result = $game->play($players, $board);
+
+    $boardKeys = [];
+    foreach ($board as $card) {
+        $boardKeys[] = $card->key();
+    }
+
+    fwrite(STDOUT, "Board: " . implode(':', $boardKeys) . "\n");
+
+    foreach ($players as $player) {
+        $playerKeys = [];
+        foreach ($player->cards as $card) {
+            $playerKeys[] = $card->key();
+        }
+
+        $playerResult = $result->resultFor($player->id);
+        if ($playerResult !== null) {
+            $best = $playerResult->hand;
+            fwrite(
+                STDOUT,
+                $player->id
+                . " hole: " . implode(':', $playerKeys)
+                . " | best: " . implode(':', $best->cardsAsKeys())
+                . " | category: " . $best->category->name
+                . "\n"
+            );
+        } else {
+            fwrite(STDOUT, $player->id . " hole: " . implode(':', $playerKeys) . "\n");
+        }
+    }
+
+    $winnerIds = $result->winnerIds();
+    if (count($winnerIds) === 1) {
+        fwrite(STDOUT, "Winner: " . $winnerIds[0] . "\n");
+    } else {
+        fwrite(STDOUT, "Split pot: " . implode(',', $winnerIds) . "\n");
+    }
+
     exit(0);
 }
 
