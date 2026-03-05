@@ -17,7 +17,7 @@ final class GameInputValidator
                 $key = $card->key();
 
                 if (isset($seen[$key])) {
-                    throw new InvalidGameInput('duplicate card detected');
+                    throw new InvalidGameInput('duplicate card detected: ' . $key);
                 }
 
                 $seen[$key] = true;
