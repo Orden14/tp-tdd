@@ -23,6 +23,7 @@ final class HandComparer
             if ($aValues[$i] === $bValues[$i]) {
                 continue;
             }
+
             return $aValues[$i] <=> $bValues[$i];
         }
 
