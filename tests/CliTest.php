@@ -107,6 +107,48 @@ final class CliTest extends TestCase
         self::assertStringContainsString('Error:', $output);
     }
 
+    public function testRunAcceptsBoardWithFiveCards(): void
+    {
+        $cmd = $this->getBaseCmd() . ' run --board S2:H3:D4:C5:S6 --p1 SK:HQ --p2 DA:C3';
+
+        $outputLines = [];
+        $exitCode = 0;
+        exec($cmd, $outputLines, $exitCode);
+
+        $output = implode("\n", $outputLines);
+
+        self::assertSame(0, $exitCode);
+        self::assertStringContainsString('OK', $output);
+    }
+
+    public function testRunRejectsBoardWithLessThanFiveCards(): void
+    {
+        $cmd = $this->getBaseCmd() . ' run --board S2:H3:D4:C5 --p1 SK:HQ --p2 DA:C3';
+
+        $outputLines = [];
+        $exitCode = 0;
+        exec($cmd, $outputLines, $exitCode);
+
+        $output = implode("\n", $outputLines);
+
+        self::assertNotSame(0, $exitCode);
+        self::assertStringContainsString('Error:', $output);
+    }
+
+    public function testRunGeneratesBoardWhenNotProvided(): void
+    {
+        $cmd = $this->getBaseCmd() . ' run --p1 SK:HQ --p2 DA:C3';
+
+        $outputLines = [];
+        $exitCode = 0;
+        exec($cmd, $outputLines, $exitCode);
+
+        $output = implode("\n", $outputLines);
+
+        self::assertSame(0, $exitCode);
+        self::assertStringContainsString('OK', $output);
+    }
+
     private function getBaseCmd(): string
     {
         $projectRoot = dirname(__DIR__);
