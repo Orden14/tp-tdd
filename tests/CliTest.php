@@ -10,8 +10,7 @@ final class CliTest extends TestCase
 {
     public function testHelpCommand(): void
     {
-        $projectRoot = dirname(__DIR__, 1);
-        $cmd = 'php ' . escapeshellarg($projectRoot . DIRECTORY_SEPARATOR . 'bin' . DIRECTORY_SEPARATOR . 'poker') . ' --help';
+        $cmd = $this->getBaseCmd() . ' --help';
 
         $outputLines = [];
         $exitCode = 0;
@@ -25,8 +24,7 @@ final class CliTest extends TestCase
 
     public function testRunWithoutArgumentsShowsErrorAndReturnsNonZero(): void
     {
-        $projectRoot = dirname(__DIR__, 1);
-        $cmd = 'php ' . escapeshellarg($projectRoot . DIRECTORY_SEPARATOR . 'bin' . DIRECTORY_SEPARATOR . 'poker') . ' run';
+        $cmd = $this->getBaseCmd() . ' run';
 
         $outputLines = [];
         $exitCode = 0;
@@ -37,5 +35,53 @@ final class CliTest extends TestCase
         self::assertNotSame(0, $exitCode, 'Le code retour de `run` sans arguments doit être non nul');
         self::assertStringContainsString('Error:', $output, 'La sortie doit contenir un message d\'erreur');
         self::assertStringContainsString('Usage:', $output, 'La sortie doit rappeler l\'usage');
+    }
+
+    public function testRunWithTwoPlayers(): void
+    {
+        $cmd = $this->getBaseCmd() . ' run --p1 SK:HQ --p2 DA:C3';
+
+        $outputLines = [];
+        $exitCode = 0;
+        exec($cmd, $outputLines, $exitCode);
+
+        $output = implode("\n", $outputLines);
+
+        self::assertSame(0, $exitCode);
+        self::assertStringContainsString('OK', $output);
+    }
+
+    public function testRunRejectsInvalidSuit(): void
+    {
+        $cmd = $this->getBaseCmd() . ' run --p1 XK:HQ --p2 DA:C3';
+
+        $outputLines = [];
+        $exitCode = 0;
+        exec($cmd, $outputLines, $exitCode);
+
+        $output = implode("\n", $outputLines);
+
+        self::assertNotSame(0, $exitCode);
+        self::assertStringContainsString('Error:', $output);
+    }
+
+    public function testRunRejectsInvalidRank(): void
+    {
+        $cmd = $this->getBaseCmd() . ' run --p1 SZ:HQ --p2 DA:C3';
+
+        $outputLines = [];
+        $exitCode = 0;
+        exec($cmd, $outputLines, $exitCode);
+
+        $output = implode("\n", $outputLines);
+
+        self::assertNotSame(0, $exitCode);
+        self::assertStringContainsString('Error:', $output);
+    }
+
+    private function getBaseCmd(): string
+    {
+        $projectRoot = dirname(__DIR__);
+        return 'php ' . escapeshellarg($projectRoot . DIRECTORY_SEPARATOR . 'bin' . DIRECTORY_SEPARATOR . 'poker');
     }
 }
