@@ -2,7 +2,10 @@
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
-use App\Util\CliUtil;
+use App\Application\Exception\InvalidGameInput;
+use App\Application\GameInputValidator;
+use App\Application\Input\PlayerInput;
+use App\Application\Parser\CardParser;
 
 $argv = $argv ?? [];
 
@@ -48,10 +51,17 @@ if ($subCommand === 'run') {
         exit(2);
     }
 
+    $parser = new CardParser();
+    $validator = new GameInputValidator();
+
     try {
-        $p1Cards = array_map(static fn(string $c) => CliUtil::parseCard($c), CliUtil::parseCardsArg($p1Arg));
-        $p2Cards = array_map(static fn(string $c) => CliUtil::parseCard($c), CliUtil::parseCardsArg($p2Arg));
-    } catch (InvalidArgumentException $e) {
+        $players = [
+            new PlayerInput('p1', $parser->parseTwoCards((string) $p1Arg)),
+            new PlayerInput('p2', $parser->parseTwoCards((string) $p2Arg)),
+        ];
+
+        $validator->assertNoDuplicateCards($players);
+    } catch (InvalidGameInput | InvalidArgumentException $e) {
         fwrite(STDOUT, "Error: " . $e->getMessage() . "\n");
         fwrite(STDOUT, $usage);
         fwrite(STDOUT, $cardsHelp);
