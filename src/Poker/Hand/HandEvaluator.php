@@ -15,6 +15,7 @@ final class HandEvaluator
         $sorted = $this->sortByRankDesc($cards);
 
         $strategies = [
+            fn(array $c): ?EvaluatedHand => $this->tryEvaluateFourOfAKind($c),
             fn(array $c): ?EvaluatedHand => $this->tryEvaluateFlush($c),
             fn(array $c): ?EvaluatedHand => $this->tryEvaluateStraight($c),
             fn(array $c): ?EvaluatedHand => $this->tryEvaluateThreeOfAKind($c),
@@ -284,6 +285,58 @@ final class HandEvaluator
     {
         $pairRanks = $this->findPairRanksDesc($sortedDesc);
         return $pairRanks[0] ?? null;
+    }
+
+    /**
+     * @param list<Card> $sortedDesc
+     */
+    private function tryEvaluateFourOfAKind(array $sortedDesc): ?EvaluatedHand
+    {
+        $quadsRank = $this->findBestQuadsRank($sortedDesc);
+        if ($quadsRank === null) {
+            return null;
+        }
+
+        $quads = [];
+        $kicker = null;
+
+        foreach ($sortedDesc as $card) {
+            if ($card->rank === $quadsRank && count($quads) < 4) {
+                $quads[] = $card;
+                continue;
+            }
+
+            if ($kicker === null && $card->rank !== $quadsRank) {
+                $kicker = $card;
+            }
+        }
+
+        if (count($quads) !== 4 || $kicker === null) {
+            return null;
+        }
+
+        return new EvaluatedHand(HandCategory::FourOfAKind, array_merge($quads, [$kicker]));
+    }
+
+    /**
+     * @param list<Card> $sortedDesc
+     */
+    private function findBestQuadsRank(array $sortedDesc): ?Rank
+    {
+        $counts = [];
+        foreach ($sortedDesc as $card) {
+            $key = $card->rank->value;
+            $counts[$key] = ($counts[$key] ?? 0) + 1;
+        }
+
+        foreach ($sortedDesc as $card) {
+            $key = $card->rank->value;
+            if (($counts[$key] ?? 0) >= 4) {
+                return $card->rank;
+            }
+        }
+
+        return null;
     }
 
     private static function rankValue(Rank $rank): int
