@@ -16,6 +16,7 @@ final class HandEvaluator
 
         $strategies = [
             fn(array $c): ?EvaluatedHand => $this->tryEvaluateFourOfAKind($c),
+            fn(array $c): ?EvaluatedHand => $this->tryEvaluateFullHouse($c),
             fn(array $c): ?EvaluatedHand => $this->tryEvaluateFlush($c),
             fn(array $c): ?EvaluatedHand => $this->tryEvaluateStraight($c),
             fn(array $c): ?EvaluatedHand => $this->tryEvaluateThreeOfAKind($c),
@@ -192,6 +193,42 @@ final class HandEvaluator
     /**
      * @param list<Card> $sortedDesc
      */
+    private function tryEvaluateFullHouse(array $sortedDesc): ?EvaluatedHand
+    {
+        $tripsRank = $this->findBestTripsRank($sortedDesc);
+        if ($tripsRank === null) {
+            return null;
+        }
+
+        $pairRank = $this->findBestPairRankExcluding($sortedDesc, $tripsRank);
+        if ($pairRank === null) {
+            return null;
+        }
+
+        $trips = [];
+        $pair = [];
+
+        foreach ($sortedDesc as $card) {
+            if ($card->rank === $tripsRank && count($trips) < 3) {
+                $trips[] = $card;
+                continue;
+            }
+
+            if ($card->rank === $pairRank && count($pair) < 2) {
+                $pair[] = $card;
+            }
+        }
+
+        if (count($trips) !== 3 || count($pair) !== 2) {
+            return null;
+        }
+
+        return new EvaluatedHand(HandCategory::FullHouse, array_merge($trips, $pair));
+    }
+
+    /**
+     * @param list<Card> $sortedDesc
+     */
     private function findBestTripsRank(array $sortedDesc): ?Rank
     {
         $counts = [];
@@ -285,6 +322,31 @@ final class HandEvaluator
     {
         $pairRanks = $this->findPairRanksDesc($sortedDesc);
         return $pairRanks[0] ?? null;
+    }
+
+    /**
+     * @param list<Card> $sortedDesc
+     */
+    private function findBestPairRankExcluding(array $sortedDesc, Rank $excludedRank): ?Rank
+    {
+        $counts = [];
+        foreach ($sortedDesc as $card) {
+            $key = $card->rank->value;
+            $counts[$key] = ($counts[$key] ?? 0) + 1;
+        }
+
+        foreach ($sortedDesc as $card) {
+            if ($card->rank === $excludedRank) {
+                continue;
+            }
+
+            $key = $card->rank->value;
+            if (($counts[$key] ?? 0) >= 2) {
+                return $card->rank;
+            }
+        }
+
+        return null;
     }
 
     /**
