@@ -122,4 +122,32 @@ final class HandEvaluatorTest extends TestCase
         self::assertSame(HandCategory::FullHouse, $hand->category);
         self::assertSame(['SA', 'HA', 'DA', 'DK', 'SK'], $hand->cardsAsKeys());
     }
+
+    public function testStraightFlushSelectsBestFiveCards(): void
+    {
+        $parser = new CardParser();
+
+        // Straight flush en piques: 10-J-Q-K-A.
+        $cards = $parser->parseCards('SA:SK:SQ:SJ:ST:DA:CK', 7);
+
+        $evaluator = new HandEvaluator();
+        $hand = $evaluator->evaluateBestHand($cards);
+
+        self::assertSame(HandCategory::StraightFlush, $hand->category);
+        self::assertSame(['SA', 'SK', 'SQ', 'SJ', 'ST'], $hand->cardsAsKeys());
+    }
+
+    public function testStraightWithAceIsDetected(): void
+    {
+        $parser = new CardParser();
+
+        // Suite A-2-3-4-5. L'As doit être utilisé comme 1.
+        $cards = $parser->parseCards('SA:D5:C4:H3:S2:DK:HQ', 7);
+
+        $evaluator = new HandEvaluator();
+        $hand = $evaluator->evaluateBestHand($cards);
+
+        self::assertSame(HandCategory::Straight, $hand->category);
+        self::assertSame(['D5', 'C4', 'H3', 'S2', 'SA'], $hand->cardsAsKeys());
+    }
 }

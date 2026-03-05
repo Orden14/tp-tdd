@@ -15,6 +15,7 @@ final class HandEvaluator
         $sorted = $this->sortByRankDesc($cards);
 
         $strategies = [
+            fn(array $c): ?EvaluatedHand => $this->tryEvaluateStraightFlush($c),
             fn(array $c): ?EvaluatedHand => $this->tryEvaluateFourOfAKind($c),
             fn(array $c): ?EvaluatedHand => $this->tryEvaluateFullHouse($c),
             fn(array $c): ?EvaluatedHand => $this->tryEvaluateFlush($c),
@@ -136,6 +137,8 @@ final class HandEvaluator
             }
         }
 
+        $hasAce = isset($byRank[Rank::Ace->value]);
+
         $uniqueCards = array_values($byRank);
         usort($uniqueCards, static fn(Card $a, Card $b): int => self::rankValue($b->rank) <=> self::rankValue($a->rank));
 
@@ -163,6 +166,21 @@ final class HandEvaluator
                 $bestFive = array_slice($run, 0, 5);
                 return new EvaluatedHand(HandCategory::Straight, $bestFive);
             }
+        }
+
+        if ($hasAce
+            && isset($byRank[Rank::Five->value], $byRank[Rank::Four->value], $byRank[Rank::Three->value], $byRank[Rank::Two->value])
+        ) {
+            return new EvaluatedHand(
+                HandCategory::Straight,
+                [
+                    $byRank[Rank::Five->value],
+                    $byRank[Rank::Four->value],
+                    $byRank[Rank::Three->value],
+                    $byRank[Rank::Two->value],
+                    $byRank[Rank::Ace->value],
+                ]
+            );
         }
 
         return null;
@@ -395,6 +413,32 @@ final class HandEvaluator
             $key = $card->rank->value;
             if (($counts[$key] ?? 0) >= 4) {
                 return $card->rank;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param list<Card> $sortedDesc
+     */
+    private function tryEvaluateStraightFlush(array $sortedDesc): ?EvaluatedHand
+    {
+        $bySuit = [];
+        foreach ($sortedDesc as $card) {
+            $suitKey = $card->suit->value;
+            $bySuit[$suitKey] ??= [];
+            $bySuit[$suitKey][] = $card;
+        }
+
+        foreach ($bySuit as $cardsOfSuit) {
+            if (count($cardsOfSuit) < 5) {
+                continue;
+            }
+
+            $straight = $this->tryEvaluateStraight($cardsOfSuit);
+            if ($straight !== null) {
+                return new EvaluatedHand(HandCategory::StraightFlush, $straight->cards);
             }
         }
 
