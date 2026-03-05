@@ -45,5 +45,23 @@ enum Rank: string
             default => throw new InvalidArgumentException('invalid rank'),
         };
     }
-}
 
+    public function labelFr(): string
+    {
+        return match ($this) {
+            self::Two => 'Deux',
+            self::Three => 'Trois',
+            self::Four => 'Quatre',
+            self::Five => 'Cinq',
+            self::Six => 'Six',
+            self::Seven => 'Sept',
+            self::Eight => 'Huit',
+            self::Nine => 'Neuf',
+            self::Ten => 'Dix',
+            self::Jack => 'Valet',
+            self::Queen => 'Dame',
+            self::King => 'Roi',
+            self::Ace => 'As',
+        };
+    }
+}

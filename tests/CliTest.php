@@ -46,7 +46,13 @@ final class CliTest extends TestCase
         $output = implode("\n", $outputLines);
 
         self::assertSame(0, $exitCode);
-        self::assertStringContainsString('OK', $output);
+        self::assertStringContainsString('Board:', $output);
+        self::assertStringContainsString('p1 hole:', $output);
+        self::assertStringContainsString('p2 hole:', $output);
+        self::assertTrue(
+            str_contains($output, 'Winner:') || str_contains($output, 'Split pot:'),
+            'La sortie doit contenir Winner: ou Split pot:'
+        );
     }
 
     public function testRunRejectsInvalidSuit(): void
@@ -116,7 +122,11 @@ final class CliTest extends TestCase
         $output = implode("\n", $outputLines);
 
         self::assertSame(0, $exitCode);
-        self::assertStringContainsString('OK', $output);
+        self::assertStringContainsString('Board:', $output);
+        self::assertTrue(
+            str_contains($output, 'Winner:') || str_contains($output, 'Split pot:'),
+            'La sortie doit contenir Winner: ou Split pot:'
+        );
     }
 
     public function testRunRejectsBoardWithLessThanFiveCards(): void
@@ -144,7 +154,11 @@ final class CliTest extends TestCase
         $output = implode("\n", $outputLines);
 
         self::assertSame(0, $exitCode);
-        self::assertStringContainsString('OK', $output);
+        self::assertStringContainsString('Board:', $output);
+        self::assertTrue(
+            str_contains($output, 'Winner:') || str_contains($output, 'Split pot:'),
+            'La sortie doit contenir Winner: ou Split pot:'
+        );
     }
 
     private function getBaseCmd(): string

@@ -90,32 +90,38 @@ if ($subCommand === 'run') {
     $game = new PokerGame();
     $result = $game->play($players, $board);
 
-    $boardKeys = [];
+    $boardNames = [];
     foreach ($board as $card) {
-        $boardKeys[] = $card->key();
+        $boardNames[] = $card->fullName();
     }
 
-    fwrite(STDOUT, "Board: " . implode(':', $boardKeys) . "\n");
+    fwrite(STDOUT, "Board: " . implode(' | ', $boardNames) . "\n");
 
     foreach ($players as $player) {
-        $playerKeys = [];
+        $playerNames = [];
         foreach ($player->cards as $card) {
-            $playerKeys[] = $card->key();
+            $playerNames[] = $card->fullName();
         }
 
         $playerResult = $result->resultFor($player->id);
         if ($playerResult !== null) {
             $best = $playerResult->hand;
+
+            $bestNames = [];
+            foreach ($best->cards as $card) {
+                $bestNames[] = $card->fullName();
+            }
+
             fwrite(
                 STDOUT,
                 $player->id
-                . " hole: " . implode(':', $playerKeys)
-                . " | best: " . implode(':', $best->cardsAsKeys())
+                . " hole: " . implode(' | ', $playerNames)
+                . " | best: " . implode(' | ', $bestNames)
                 . " | category: " . $best->category->name
                 . "\n"
             );
         } else {
-            fwrite(STDOUT, $player->id . " hole: " . implode(':', $playerKeys) . "\n");
+            fwrite(STDOUT, $player->id . " hole: " . implode(' | ', $playerNames) . "\n");
         }
     }
 

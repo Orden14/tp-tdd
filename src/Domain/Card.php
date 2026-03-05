@@ -14,4 +14,9 @@ final readonly class Card
     {
         return $this->suit->value . $this->rank->value;
     }
+
+    public function fullName(): string
+    {
+        return $this->rank->labelFr() . ' de ' . $this->suit->labelFr();
+    }
 }

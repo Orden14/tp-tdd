@@ -27,4 +27,14 @@ enum Suit: string
             default => throw new InvalidArgumentException('invalid suit'),
         };
     }
+
+    public function labelFr(): string
+    {
+        return match ($this) {
+            self::Spades => 'pique',
+            self::Hearts => 'coeur',
+            self::Diamonds => 'carreau',
+            self::Clubs => 'trèfle',
+        };
+    }
 }
