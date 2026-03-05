@@ -38,4 +38,18 @@ final class HandEvaluatorTest extends TestCase
         self::assertSame(HandCategory::OnePair, $hand->category);
         self::assertSame(['SA', 'HA', 'DK', 'HQ', 'CJ'], $hand->cardsAsKeys());
     }
+
+    public function testTwoPairSelectsTwoBestPairsThenBestKicker(): void
+    {
+        $parser = new CardParser();
+
+        // Paires A et K + kicker Q (on ignore J, 9).
+        $cards = $parser->parseCards('SA:HA:DK:SK:HQ:CJ:D9', 7);
+
+        $evaluator = new HandEvaluator();
+        $hand = $evaluator->evaluateBestHand($cards);
+
+        self::assertSame(HandCategory::TwoPair, $hand->category);
+        self::assertSame(['SA', 'HA', 'DK', 'SK', 'HQ'], $hand->cardsAsKeys());
+    }
 }

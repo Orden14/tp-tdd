@@ -12,36 +12,125 @@ final class HandEvaluator
      */
     public function evaluateBestHand(array $cards): EvaluatedHand
     {
-        $sorted = $cards;
-        usort($sorted, static function (Card $a, Card $b): int {
-            return self::rankValue($b->rank) <=> self::rankValue($a->rank);
-        });
+        $sorted = $this->sortByRankDesc($cards);
 
-        $pairRank = $this->findBestPairRank($sorted);
-        if ($pairRank !== null) {
-            $pairCards = [];
-            $kickers = [];
-
-            foreach ($sorted as $card) {
-                if ($card->rank === $pairRank && count($pairCards) < 2) {
-                    $pairCards[] = $card;
-                    continue;
-                }
-
-                if ($card->rank !== $pairRank && count($kickers) < 3) {
-                    $kickers[] = $card;
-                }
-            }
-
-            return new EvaluatedHand(HandCategory::OnePair, array_merge($pairCards, $kickers));
+        $twoPair = $this->tryEvaluateTwoPair($sorted);
+        if ($twoPair !== null) {
+            return $twoPair;
         }
 
-        $bestFive = array_slice($sorted, 0, 5);
+        $onePair = $this->tryEvaluateOnePair($sorted);
+        if ($onePair !== null) {
+            return $onePair;
+        }
+
+        return $this->evaluateHighCard($sorted);
+    }
+
+    /**
+     * @param list<Card> $cards
+     * @return list<Card>
+     */
+    private function sortByRankDesc(array $cards): array
+    {
+        $sorted = $cards;
+        usort($sorted, static fn(Card $a, Card $b): int => self::rankValue($b->rank) <=> self::rankValue($a->rank));
+        return $sorted;
+    }
+
+    /**
+     * @param list<Card> $sortedDesc
+     */
+    private function evaluateHighCard(array $sortedDesc): EvaluatedHand
+    {
+        $bestFive = array_slice($sortedDesc, 0, 5);
         return new EvaluatedHand(HandCategory::HighCard, $bestFive);
     }
 
-    /** @param list<Card> $sortedDesc */
-    private function findBestPairRank(array $sortedDesc): ?Rank
+    /**
+     * @param list<Card> $sortedDesc
+     */
+    private function tryEvaluateOnePair(array $sortedDesc): ?EvaluatedHand
+    {
+        $pairRank = $this->findBestPairRank($sortedDesc);
+        if ($pairRank === null) {
+            return null;
+        }
+
+        [$pairCards, $kickers] = $this->splitPairAndKickers($sortedDesc, $pairRank, kickerCount: 3);
+        return new EvaluatedHand(HandCategory::OnePair, array_merge($pairCards, $kickers));
+    }
+
+    /**
+     * @param list<Card> $sortedDesc
+     */
+    private function tryEvaluateTwoPair(array $sortedDesc): ?EvaluatedHand
+    {
+        $pairRanks = $this->findPairRanksDesc($sortedDesc);
+        if (count($pairRanks) < 2) {
+            return null;
+        }
+
+        $highPair = $pairRanks[0];
+        $lowPair = $pairRanks[1];
+
+        [$highPairCards] = $this->splitPairAndKickers($sortedDesc, $highPair, kickerCount: 0);
+        [$lowPairCards] = $this->splitPairAndKickers($sortedDesc, $lowPair, kickerCount: 0);
+
+        $kicker = $this->findBestKickerExcludingRanks($sortedDesc, [$highPair, $lowPair]);
+        if ($kicker === null) {
+            return null;
+        }
+
+        return new EvaluatedHand(HandCategory::TwoPair, array_merge($highPairCards, $lowPairCards, [$kicker]));
+    }
+
+    /**
+     * @param list<Card> $sortedDesc
+     * @param list<Rank> $excluded
+     */
+    private function findBestKickerExcludingRanks(array $sortedDesc, array $excluded): ?Card
+    {
+        foreach ($sortedDesc as $card) {
+            foreach ($excluded as $rank) {
+                if ($card->rank === $rank) {
+                    continue 2;
+                }
+            }
+            return $card;
+        }
+
+        return null;
+    }
+
+    /**
+     * @param list<Card> $sortedDesc
+     * @return array{0: list<Card>, 1: list<Card>}
+     */
+    private function splitPairAndKickers(array $sortedDesc, Rank $pairRank, int $kickerCount): array
+    {
+        $pairCards = [];
+        $kickers = [];
+
+        foreach ($sortedDesc as $card) {
+            if ($card->rank === $pairRank && count($pairCards) < 2) {
+                $pairCards[] = $card;
+                continue;
+            }
+
+            if ($kickerCount > 0 && $card->rank !== $pairRank && count($kickers) < $kickerCount) {
+                $kickers[] = $card;
+            }
+        }
+
+        return [$pairCards, $kickers];
+    }
+
+    /**
+     * @param list<Card> $sortedDesc
+     * @return list<Rank> ranks with count>=2, sorted desc
+     */
+    private function findPairRanksDesc(array $sortedDesc): array
     {
         $counts = [];
         foreach ($sortedDesc as $card) {
@@ -49,17 +138,28 @@ final class HandEvaluator
             $counts[$key] = ($counts[$key] ?? 0) + 1;
         }
 
-        $best = null;
+        $seen = [];
+        $pairs = [];
         foreach ($sortedDesc as $card) {
             $key = $card->rank->value;
+            if (isset($seen[$key])) {
+                continue;
+            }
+            $seen[$key] = true;
+
             if (($counts[$key] ?? 0) >= 2) {
-                if ($best === null || self::rankValue($card->rank) > self::rankValue($best)) {
-                    $best = $card->rank;
-                }
+                $pairs[] = $card->rank;
             }
         }
 
-        return $best;
+        return $pairs;
+    }
+
+    /** @param list<Card> $sortedDesc */
+    private function findBestPairRank(array $sortedDesc): ?Rank
+    {
+        $pairRanks = $this->findPairRanksDesc($sortedDesc);
+        return $pairRanks[0] ?? null;
     }
 
     private static function rankValue(Rank $rank): int
