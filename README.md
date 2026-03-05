@@ -1,1 +1,1 @@
-# tp-tdd
+# TP TDD Texas Hold'em Poker
