@@ -14,6 +14,11 @@ final class HandEvaluator
     {
         $sorted = $this->sortByRankDesc($cards);
 
+        $straight = $this->tryEvaluateStraight($sorted);
+        if ($straight !== null) {
+            return $straight;
+        }
+
         $threeOfAKind = $this->tryEvaluateThreeOfAKind($sorted);
         if ($threeOfAKind !== null) {
             return $threeOfAKind;
@@ -119,6 +124,55 @@ final class HandEvaluator
         }
 
         return new EvaluatedHand(HandCategory::ThreeOfAKind, array_merge($tripsCards, $kickers));
+    }
+
+    /**
+     * @param list<Card> $sortedDesc
+     */
+    private function tryEvaluateStraight(array $sortedDesc): ?EvaluatedHand
+    {
+        // On déduplique par rank (on garde la carte la plus haute disponible pour chaque rank).
+        $byRank = [];
+        foreach ($sortedDesc as $card) {
+            $key = $card->rank->value;
+            if (!isset($byRank[$key])) {
+                $byRank[$key] = $card;
+            }
+        }
+
+        // Ranks uniques triés par valeur desc.
+        $uniqueCards = array_values($byRank);
+        usort($uniqueCards, static fn(Card $a, Card $b): int => self::rankValue($b->rank) <=> self::rankValue($a->rank));
+
+        $run = [];
+        $prevValue = null;
+
+        foreach ($uniqueCards as $card) {
+            $v = self::rankValue($card->rank);
+
+            if ($prevValue === null) {
+                $run = [$card];
+                $prevValue = $v;
+                continue;
+            }
+
+            if ($v === $prevValue - 1) {
+                $run[] = $card;
+            } elseif ($v === $prevValue) {
+                // ne devrait pas arriver car dédupliqué
+            } else {
+                $run = [$card];
+            }
+
+            $prevValue = $v;
+
+            if (count($run) >= 5) {
+                $bestFive = array_slice($run, 0, 5);
+                return new EvaluatedHand(HandCategory::Straight, $bestFive);
+            }
+        }
+
+        return null;
     }
 
     /**
