@@ -2,10 +2,12 @@
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
+use App\Application\BoardProvider;
 use App\Application\Exception\InvalidGameInput;
 use App\Application\GameInputValidator;
 use App\Application\Input\PlayerInput;
 use App\Application\Parser\CardParser;
+use App\Domain\Deck;
 
 $argv = $argv ?? [];
 
@@ -30,6 +32,7 @@ if ($subCommand === 'run') {
 
     $p1Arg = null;
     $p2Arg = null;
+    $boardArg = null;
 
     for ($i = 2, $iMax = count($argv); $i < $iMax; $i += 2) {
         $opt = $argv[$i] ?? null;
@@ -42,6 +45,11 @@ if ($subCommand === 'run') {
 
         if ($opt === '--p2') {
             $p2Arg = $val;
+            continue;
+        }
+
+        if ($opt === '--board') {
+            $boardArg = $val;
         }
     }
 
@@ -60,15 +68,24 @@ if ($subCommand === 'run') {
             new PlayerInput('p2', $parser->parseTwoCards((string) $p2Arg)),
         ];
 
-        $validator->assertNoDuplicateCards($players);
-    } catch (InvalidGameInput | InvalidArgumentException $e) {
+        $excluded = [];
+        foreach ($players as $player) {
+            foreach ($player->cards as $card) {
+                $excluded[] = $card;
+            }
+        }
+
+        $boardProvider = new BoardProvider($parser, new Deck());
+        $board = $boardProvider->provide($boardArg, $excluded);
+
+        $validator->assertNoDuplicateCards($players, $board);
+    } catch (InvalidGameInput | \InvalidArgumentException $e) {
         fwrite(STDOUT, "Error: " . $e->getMessage() . "\n");
         fwrite(STDOUT, $usage);
         fwrite(STDOUT, $cardsHelp);
         exit(2);
     }
 
-    // Placeholder avant implémentation.
     fwrite(STDOUT, "OK\n");
     exit(0);
 }

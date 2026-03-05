@@ -28,7 +28,7 @@ final class CardParser
     }
 
     /** @return list<Card> */
-    public function parseTwoCards(string $value): array
+    public function parseCards(string $value, int $expectedCount): array
     {
         $value = trim($value);
         if ($value === '') {
@@ -36,13 +36,21 @@ final class CardParser
         }
 
         $parts = array_map('trim', explode(':', $value));
-        if (count($parts) !== 2) {
-            throw new InvalidGameInput('expected exactly 2 cards separated by ":"');
+        if (count($parts) !== $expectedCount) {
+            throw new InvalidGameInput('expected exactly ' . $expectedCount . ' cards separated by ":"');
         }
 
-        return [
-            $this->parseCard($parts[0]),
-            $this->parseCard($parts[1]),
-        ];
+        $cards = [];
+        foreach ($parts as $part) {
+            $cards[] = $this->parseCard($part);
+        }
+
+        return $cards;
+    }
+
+    /** @return list<Card> */
+    public function parseTwoCards(string $value): array
+    {
+        return $this->parseCards($value, 2);
     }
 }

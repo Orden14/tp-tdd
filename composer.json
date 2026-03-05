@@ -20,7 +20,7 @@
     }
   },
   "scripts": {
-    "test": "phpunit"
+    "test": "phpunit",
+    "autoload": "composer dump-autoload"
   }
 }
-
