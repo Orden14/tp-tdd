@@ -14,6 +14,11 @@ final class HandEvaluator
     {
         $sorted = $this->sortByRankDesc($cards);
 
+        $flush = $this->tryEvaluateFlush($sorted);
+        if ($flush !== null) {
+            return $flush;
+        }
+
         $straight = $this->tryEvaluateStraight($sorted);
         if ($straight !== null) {
             return $straight;
@@ -131,7 +136,6 @@ final class HandEvaluator
      */
     private function tryEvaluateStraight(array $sortedDesc): ?EvaluatedHand
     {
-        // On déduplique par rank (on garde la carte la plus haute disponible pour chaque rank).
         $byRank = [];
         foreach ($sortedDesc as $card) {
             $key = $card->rank->value;
@@ -140,7 +144,6 @@ final class HandEvaluator
             }
         }
 
-        // Ranks uniques triés par valeur desc.
         $uniqueCards = array_values($byRank);
         usort($uniqueCards, static fn(Card $a, Card $b): int => self::rankValue($b->rank) <=> self::rankValue($a->rank));
 
@@ -158,8 +161,6 @@ final class HandEvaluator
 
             if ($v === $prevValue - 1) {
                 $run[] = $card;
-            } elseif ($v === $prevValue) {
-                // ne devrait pas arriver car dédupliqué
             } else {
                 $run = [$card];
             }
@@ -169,6 +170,28 @@ final class HandEvaluator
             if (count($run) >= 5) {
                 $bestFive = array_slice($run, 0, 5);
                 return new EvaluatedHand(HandCategory::Straight, $bestFive);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param list<Card> $sortedDesc
+     */
+    private function tryEvaluateFlush(array $sortedDesc): ?EvaluatedHand
+    {
+        $bySuit = [];
+        foreach ($sortedDesc as $card) {
+            $suitKey = $card->suit->value;
+            $bySuit[$suitKey] ??= [];
+            $bySuit[$suitKey][] = $card;
+        }
+
+        foreach ($bySuit as $cardsOfSuit) {
+            if (count($cardsOfSuit) >= 5) {
+                $bestFive = array_slice($cardsOfSuit, 0, 5);
+                return new EvaluatedHand(HandCategory::Flush, $bestFive);
             }
         }
 
@@ -239,7 +262,7 @@ final class HandEvaluator
 
     /**
      * @param list<Card> $sortedDesc
-     * @return list<Rank> ranks with count>=2, sorted desc
+     * @return list<Rank> ranks with count >=2, sorted desc
      */
     private function findPairRanksDesc(array $sortedDesc): array
     {
